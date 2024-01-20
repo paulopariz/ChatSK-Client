@@ -1,27 +1,74 @@
-// SeuComponente.vue
-
 <template>
-  <main
-    class="max-w-4xl px-10 w-full h-full absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2 content-center grid gap-6"
-  >
-    <div class="w-full">
-      <button
-        class="text-sm tracking-wide py-2.5 w-36 float-end rounded-md border flex items-center gap-1.5 justify-center border-secondary hover:border-dashed bg-secondary/5 transition-all"
-      >
-        Criar sala <img src="./assets/icons/plus.svg" alt="Criar" class="w-4" />
-      </button>
+  <main class="max-w-4xl p-10 w-full h-full grid m-auto gap-6">
+    <div class="flex items-center justify-between">
+      <div class="flex gap-3 items-center">
+        <Select>
+          <SelectTrigger class="w-[180px] h-12 px-5">
+            <SelectValue placeholder="Selecione o tema" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Fruits</SelectLabel>
+              <SelectItem value="light"> Light </SelectItem>
+              <SelectItem value="dark"> Dark </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        <Input
+          placeholder="Username"
+          type="text"
+          v-model="username"
+          class="w-60 h-12 px-5 outline-none rounded-md border justify-center border-secondary focus: bg-secondary/5 transition-all bg-transparent"
+        />
+      </div>
     </div>
 
+    <Dialog>
+      <DialogTrigger
+        class="text-sm mt-20 tracking-wide h-12 w-36 rounded-md border flex items-center gap-1.5 justify-center border-secondary bg-secondary/5 transition-all"
+      >
+        Criar sala
+        <img src="./assets/icons/plus.svg" alt="Criar" class="w-4" />
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Criar sala</DialogTitle>
+          <DialogDescription>
+            Crie uma sala personalizada e estabeleça conexões com outros
+            usuários.
+
+            <div class="my-8 grid gap-4">
+              <div>
+                <label>Nome da Sala</label>
+                <Input class="mt-2" placeholder="Digite o nome da sala..." />
+              </div>
+
+              <div>
+                <label>Defina o limete de usuários</label>
+              </div>
+            </div>
+          </DialogDescription>
+        </DialogHeader>
+
+        <DialogFooter>
+          <DialogClose
+            class="bg-white dark:bg-red-600 rounded-md py-2 font-medium text-sm tracking-wide px-6 text-background"
+          >
+            Criar
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     <section class="grid grid-cols-3 gap-6 content-center">
       <div
         v-for="(room, index) in rooms"
         :key="index"
-        class="relative rounded-md border border-secondary hover:border-dashed h-52 overflow-hidden transition-all hover:bg-secondary/5 group"
+        class="relative rounded-md border border-secondary h-52 overflow-hidden transition-all hover:bg-secondary/5 group"
       >
         <div class="p-5 flex items-start justify-between">
           <div class="grid gap-1.5">
             <h1
-              class="text-lg font-semibold tracking-wider w-40 text-ellipsis text-nowrap overflow-hidden group-hover:pl-0.5 transition-all"
+              class="text-lg font-semibold tracking-wider w-40 text-ellipsis text-nowrap overflow-hidden transition-all"
             >
               {{ room.name }}
             </h1>
@@ -42,25 +89,21 @@
         </div>
 
         <button
-          class="w-full h-12 tracking-wide font-semibold border border-x-0 border-b-0 border-secondary bg-secondary/10 text-sm absolute bottom-0 group-hover:border-dashed transition-all"
+          @click="enterRoom(room)"
+          class="w-full h-12 tracking-wide font-semibold border border-x-0 border-b-0 border-secondary bg-secondary/10 text-sm absolute bottom-0 group-transition-all"
         >
           Entrar na sala
         </button>
       </div>
     </section>
 
-    <!-- <div class="my-10 max-w-3xl m-auto">
-      <input
-        class="text-black"
+    <div class="my-10 max-w-3xl m-auto">
+      <Input
         type="text"
         placeholder="msg"
         @keyup.enter="sendMessage"
         v-model="message"
       />
-
-      <br />
-      <br />
-      <br />
 
       <div v-for="(msg, index) in messages" :key="index">
         <p>
@@ -68,14 +111,33 @@
           {{ msg.text }} - <span class="font-bold">{{ msg.createAt }}</span>
         </p>
       </div>
-    </div> -->
+    </div>
   </main>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { io } from "socket.io-client";
-
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "./components/ui/dialog";
+import { Input } from "./components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "./components/ui/select";
 interface Messages {
   room: string;
   text: string;
@@ -83,9 +145,22 @@ interface Messages {
   createAt: string;
 }
 
+interface SendMessages {
+  room: string;
+  message: string;
+  username: string;
+}
+
+interface CurrentData {
+  id: number;
+  name: string;
+  owner: string;
+  createAt: string;
+  usersOnline: string;
+}
+
 //
-const username = ref("paulopariz");
-const room = ref("sala1");
+const username = ref("");
 const message = ref("");
 const messages = ref<Messages[]>([]);
 const rooms = ref([
@@ -136,12 +211,16 @@ const rooms = ref([
 const socket = io("http://localhost:3001");
 
 const sendMessage = async () => {
+  var room: SendMessages = JSON.parse(
+    localStorage.getItem("currentData") || "null"
+  );
   try {
     const data = {
-      room: room.value,
+      room: room.room,
       message: message.value,
       username: username.value,
     };
+
     socket.emit("message", data);
   } catch (error) {
     console.error(error);
@@ -150,25 +229,29 @@ const sendMessage = async () => {
   }
 };
 
+const enterRoom = (data: CurrentData) => {
+  var log = {
+    username: username.value,
+    room: data.name,
+    id: data.id,
+  };
+  localStorage.setItem("currentData", JSON.stringify(log));
+};
+
 onMounted(() => {
-  socket.emit(
-    "select_room",
-    {
-      username: username.value,
-      room: room.value,
-    },
-    (res: any) => {
-      for (let i = 0; i < res.length; i++) {
-        const element = res[i];
-        messages.value.push(element);
-      }
+  var data: any = localStorage.getItem("currentData");
+  username.value = JSON.parse(data).username;
+
+  socket.emit("select_room", JSON.parse(data), (res: any) => {
+    for (let i = 0; i < res.length; i++) {
+      const element = res[i];
+
+      messages.value.push(element);
     }
-  );
+  });
 
   //escutar evento
   socket.on("message", (data) => {
-    console.log("data", data);
-
     messages.value.push(data);
   });
 });
