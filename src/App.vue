@@ -2,13 +2,12 @@
   <main class="max-w-4xl p-10 w-full h-full grid m-auto gap-6">
     <div class="flex items-center justify-between">
       <div class="flex gap-3 items-center">
-        <Select>
+        <Select v-model="theme">
           <SelectTrigger class="w-[180px] h-12 px-5">
             <SelectValue placeholder="Selecione o tema" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectLabel>Fruits</SelectLabel>
               <SelectItem value="light"> Light </SelectItem>
               <SelectItem value="dark"> Dark </SelectItem>
             </SelectGroup>
@@ -18,17 +17,21 @@
           placeholder="Username"
           type="text"
           v-model="username"
-          class="w-60 h-12 px-5 outline-none rounded-md border justify-center border-secondary focus: bg-secondary/5 transition-all bg-transparent"
+          class="w-60 h-12 px-5 outline-none rounded-md border justify-center bg-transparent"
         />
       </div>
     </div>
 
     <Dialog>
       <DialogTrigger
-        class="text-sm mt-20 tracking-wide h-12 w-36 rounded-md border flex items-center gap-1.5 justify-center border-secondary bg-secondary/5 transition-all"
+        class="text-sm mt-20 tracking-wide h-12 w-36 rounded-md border flex items-center gap-1.5 justify-center"
       >
         Criar sala
-        <img src="./assets/icons/plus.svg" alt="Criar" class="w-4" />
+        <img
+          src="./assets/icons/plus.svg"
+          alt="Criar"
+          class="w-4 invert dark:invert-0"
+        />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -52,7 +55,7 @@
 
         <DialogFooter>
           <DialogClose
-            class="bg-white dark:bg-red-600 rounded-md py-2 font-medium text-sm tracking-wide px-6 text-background"
+            class="bg-primary dark:bg-white rounded-md py-2 font-medium text-sm tracking-wide px-6 text-background"
           >
             Criar
           </DialogClose>
@@ -63,25 +66,21 @@
       <div
         v-for="(room, index) in rooms"
         :key="index"
-        class="relative rounded-md border border-secondary h-52 overflow-hidden transition-all hover:bg-secondary/5 group"
+        class="relative rounded-md border h-52 overflow-hidden group"
       >
         <div class="p-5 flex items-start justify-between">
           <div class="grid gap-1.5">
             <h1
-              class="text-lg font-semibold tracking-wider w-40 text-ellipsis text-nowrap overflow-hidden transition-all"
+              class="text-lg font-semibold tracking-wider w-40 text-ellipsis text-nowrap overflow-hidden"
             >
               {{ room.name }}
             </h1>
-            <span class="text-xs text-gray-300 tracking-wide">
-              {{ room.createAt }}</span
-            >
-            <span class="text-xs text-gray-300 tracking-wide"
-              >Dono: {{ room.owner }}</span
-            >
+            <span class="text-xs tracking-wide"> {{ room.createAt }}</span>
+            <span class="text-xs tracking-wide">Dono: {{ room.owner }}</span>
           </div>
-          <span class="text-xs mt-1.5 text-gray-300 flex items-start gap-2"
+          <span class="text-xs mt-1.5 flex items-start gap-2"
             ><img
-              class="w-5 -mt-0.5"
+              class="w-5 -mt-0.5 invert dark:invert-0"
               src="./assets/icons/users.svg"
               alt="Users"
             />{{ room.usersOnline }}/10</span
@@ -90,7 +89,7 @@
 
         <button
           @click="enterRoom(room)"
-          class="w-full h-12 tracking-wide font-semibold border border-x-0 border-b-0 border-secondary bg-secondary/10 text-sm absolute bottom-0 group-transition-all"
+          class="w-full h-12 tracking-wide font-semibold border border-x-0 border-b-0 bg-accent dark:bg-transparent text-sm absolute bottom-0 group-"
         >
           Entrar na sala
         </button>
@@ -116,7 +115,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { io } from "socket.io-client";
 import {
   Dialog,
@@ -134,7 +133,6 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "./components/ui/select";
@@ -161,6 +159,7 @@ interface CurrentData {
 
 //
 const username = ref("");
+const theme: any = ref("");
 const message = ref("");
 const messages = ref<Messages[]>([]);
 const rooms = ref([
@@ -239,6 +238,9 @@ const enterRoom = (data: CurrentData) => {
 };
 
 onMounted(() => {
+  var isDark = localStorage.getItem("theme");
+  theme.value = isDark === "dark" ? "dark" : "light";
+
   var data: any = localStorage.getItem("currentData");
   username.value = JSON.parse(data).username;
 
@@ -254,5 +256,18 @@ onMounted(() => {
   socket.on("message", (data) => {
     messages.value.push(data);
   });
+});
+
+//tema
+watch(theme, (value: any) => {
+  console.log("value", value);
+
+  if (value === "dark") {
+    localStorage.setItem("theme", "dark");
+    document.body.classList.toggle("dark");
+  } else {
+    document.body.classList.remove("dark");
+    localStorage.setItem("theme", "light");
+  }
 });
 </script>
