@@ -1,4 +1,6 @@
 <template>
+  <Toaster rich-colors position="top-right" theme="dark" />
+
   <main class="max-w-4xl p-10 w-full h-full grid m-auto gap-6">
     <div class="flex items-center justify-between">
       <div class="flex gap-3 items-center">
@@ -40,14 +42,20 @@
             Crie uma sala personalizada e estabeleça conexões com outros
             usuários.
 
-            <div class="my-8 grid gap-4">
+            <div class="my-8 grid gap-6">
               <div>
-                <label>Nome da Sala</label>
-                <Input class="mt-2" placeholder="Digite o nome da sala..." />
+                <label class="text-base">Nome da Sala</label>
+                <Input
+                  v-model="nameRoomCreated"
+                  class="mt-2"
+                  placeholder="Digite o nome da sala..."
+                />
               </div>
 
               <div>
-                <label>Defina o limete de usuários</label>
+                <label class="text-base">Defina o limite de usuários</label>
+                <h1 class="mt-2 te">Máximo de usuários: {{ maxUser[0] }}</h1>
+                <Slider class="mt-2" :max="10" :step="1" v-model="maxUser" />
               </div>
             </div>
           </DialogDescription>
@@ -55,6 +63,7 @@
 
         <DialogFooter>
           <DialogClose
+            @click="createRoom"
             class="bg-primary dark:bg-white rounded-md py-2 font-medium text-sm tracking-wide px-6 text-background"
           >
             Criar
@@ -78,13 +87,14 @@
             <span class="text-xs tracking-wide"> {{ room.createAt }}</span>
             <span class="text-xs tracking-wide">Dono: {{ room.owner }}</span>
           </div>
-          <span class="text-xs mt-1.5 flex items-start gap-2"
+          <!-- <span class="text-xs mt-1.5 flex items-start gap-2"
             ><img
               class="w-5 -mt-0.5 invert dark:invert-0"
               src="./assets/icons/users.svg"
               alt="Users"
-            />{{ room.usersOnline }}/10</span
-          >
+            />
+            {{ room.usersOnline }}/10</span
+          > -->
         </div>
 
         <button
@@ -136,6 +146,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./components/ui/select";
+import { Slider } from "./components/ui/slider";
+import { Toaster } from "./components/ui/sonner";
+// import { toast } from "vue-sonner";
+
 interface Messages {
   room: string;
   text: string;
@@ -154,60 +168,55 @@ interface CurrentData {
   name: string;
   owner: string;
   createAt: string;
-  usersOnline: string;
+  // usersOnline: string;
+}
+
+interface Rooms {
+  id: number;
+  name: string;
+  owner: string;
+  createAt: string;
+  // usersOnline: number;
 }
 
 //
+const nameRoomCreated = ref("");
+const maxUser = ref([1]);
 const username = ref("");
 const theme: any = ref("");
 const message = ref("");
 const messages = ref<Messages[]>([]);
-const rooms = ref([
-  {
-    id: 1,
-    name: "Sala 001",
-    owner: "paulopariz",
-    createAt: "12/02/2024 às 23:12",
-    usersOnline: "03",
-  },
-  {
-    id: 2,
-    name: "Sala 002",
-    owner: "paulopariz 02",
-    createAt: "12/02/2024 às 13:13",
-    usersOnline: "00",
-  },
-  {
-    id: 3,
-    name: "Sala 04",
-    owner: "user 0",
-    createAt: "09/01/2024 às 23:12",
-    usersOnline: "10",
-  },
-  {
-    id: 4,
-    name: "01 room",
-    owner: "und user",
-    createAt: "14/02/2024 às 20:42",
-    usersOnline: "03",
-  },
-  {
-    id: 5,
-    name: "Sala 00012",
-    owner: "paulopariz",
-    createAt: "12/03/2024 às 21:54",
-    usersOnline: "07",
-  },
-  {
-    id: 6,
-    name: "rooms SS",
-    owner: "joh",
-    createAt: "30/02/2024 às 23:12",
-    usersOnline: "00",
-  },
-]);
+const rooms = ref<Rooms[]>([]);
 
 const socket = io("http://localhost:3001");
+
+// Métodos
+
+//cria uma sala
+const createRoom = () => {
+  var data = {
+    room: nameRoomCreated.value,
+    owner: username.value,
+  };
+  if (data) {
+    socket.emit("create_room", data, (response: any) => {
+      console.log("response", response);
+
+      if (response.success) {
+        rooms.value.push(response.data);
+      } else {
+        console.log(response.message);
+      }
+    });
+  }
+};
+
+const listRooms = () => {
+  socket.emit("list_rooms", (roomList: Rooms[]) => {
+    console.log("Lista de salas:", roomList);
+    rooms.value = roomList;
+  });
+};
 
 const sendMessage = async () => {
   var room: SendMessages = JSON.parse(
@@ -238,6 +247,8 @@ const enterRoom = (data: CurrentData) => {
 };
 
 onMounted(() => {
+  listRooms();
+
   var isDark = localStorage.getItem("theme");
   theme.value = isDark === "dark" ? "dark" : "light";
 
