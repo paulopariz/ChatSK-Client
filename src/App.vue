@@ -15,12 +15,23 @@
             </SelectGroup>
           </SelectContent>
         </Select>
-        <Input
-          placeholder="Username"
-          type="text"
-          v-model="username"
-          class="w-60 h-12 px-5 outline-none rounded-md border justify-center bg-transparent"
-        />
+
+        <div class="flex items-center gap-1.5">
+          <Input
+            placeholder="Username"
+            type="text"
+            v-model="username"
+            class="w-60 h-12 px-5 outline-none rounded-md border justify-center bg-transparent"
+          />
+
+          <button
+            v-if="username !== currentUsername"
+            @click="saveNameUser"
+            class="bg-secondary/10 border h-12 rounded-md font-medium text-sm tracking-wide px-5 text-background"
+          >
+            <img src="./assets/icons/confirm.svg" alt="Save" />
+          </button>
+        </div>
       </div>
     </div>
 
@@ -160,7 +171,7 @@ import {
 import { Slider } from "./components/ui/slider";
 import { Skeleton } from "./components/ui/skeleton";
 import { Toaster } from "./components/ui/sonner";
-// import { toast } from "vue-sonner";
+import { toast } from "vue-sonner";
 
 interface Messages {
   room: string;
@@ -195,6 +206,7 @@ interface Rooms {
 const nameRoomCreated = ref("");
 const maxUser = ref([1]);
 const username = ref("");
+const currentUsername = ref("");
 const theme: any = ref("");
 const message = ref("");
 const messages = ref<Messages[]>([]);
@@ -209,9 +221,37 @@ const formatData = (data: string) => {
   return moment(data).format("DD/MM/YY [ás] hh:mm");
 };
 
+const saveNameUser = () => {
+  if (!username.value.length) {
+    return toast.info("Configure o seu username!");
+  }
+
+  var log = {
+    username: username.value,
+  };
+  localStorage.setItem("currentData", JSON.stringify(log));
+
+  var data: any = localStorage.getItem("currentData");
+  username.value = JSON.parse(data).username;
+
+  if (JSON.parse(data).username !== currentUsername.value) {
+    toast.success("Username atualizado com sucesso!");
+    currentUsername.value = JSON.parse(data).username;
+  }
+};
+
 //cria uma sala
 const createRoom = () => {
-  if (nameRoomCreated.value) {
+  if (!nameRoomCreated.value) {
+    return toast.error("Nome da sala é obrigatório!");
+  }
+
+  if (maxUser.value[0] < 3) {
+    return toast.error("Mínimo 3 usuários!");
+  }
+
+  if (!username.value.length) {
+    return toast.info("Configure o seu username!");
   }
 
   var data = {
@@ -221,12 +261,13 @@ const createRoom = () => {
   };
   if (data) {
     socket.emit("create_room", data, (response: any) => {
-      console.log("response", response);
-
       if (response.success) {
+        toast.success("Sala criada com sucesso!");
+        nameRoomCreated.value = "";
+        maxUser.value[0] = 1;
         rooms.value.push(response.data);
       } else {
-        console.log(response.message);
+        toast.error("Ocorreu um erro, tente novamente!");
       }
     });
   }
@@ -275,6 +316,7 @@ onMounted(() => {
 
   var data: any = localStorage.getItem("currentData");
   username.value = JSON.parse(data).username;
+  currentUsername.value = JSON.parse(data).username;
 
   //atualiza a lista de salas
   socket.on("room_list_update", () => {
@@ -297,8 +339,6 @@ onMounted(() => {
 
 //tema
 watch(theme, (value: any) => {
-  console.log("value", value);
-
   if (value === "dark") {
     localStorage.setItem("theme", "dark");
     document.body.classList.toggle("dark");
