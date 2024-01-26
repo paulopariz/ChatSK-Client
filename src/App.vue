@@ -26,7 +26,7 @@
 
     <Dialog>
       <DialogTrigger
-        class="text-sm mt-20 tracking-wide h-12 w-36 rounded-md border flex items-center gap-1.5 justify-center"
+        class="text-sm mt-20 tracking-wide h-12 w-36 rounded-md border flex items-center gap-1.5 justify-center hover:bg-secondary/10"
       >
         Criar sala
         <img
@@ -73,9 +73,10 @@
     </Dialog>
     <section class="grid grid-cols-3 gap-6 content-center">
       <div
+        v-if="rooms.length > 0"
         v-for="(room, index) in rooms"
         :key="index"
-        class="relative rounded-md border h-52 overflow-hidden group"
+        class="relative rounded-md border h-52 overflow-hidden group hover:bg-secondary/5"
       >
         <div class="p-5 flex items-start justify-between">
           <div class="grid gap-1.5">
@@ -84,17 +85,19 @@
             >
               {{ room.name }}
             </h1>
-            <span class="text-xs tracking-wide"> {{ room.createAt }}</span>
+            <span class="text-xs tracking-wide">
+              {{ formatData(room.createAt) }}</span
+            >
             <span class="text-xs tracking-wide">Dono: {{ room.owner }}</span>
           </div>
-          <!-- <span class="text-xs mt-1.5 flex items-start gap-2"
+          <span class="text-xs mt-1.5 flex items-start gap-2"
             ><img
               class="w-5 -mt-0.5 invert dark:invert-0"
               src="./assets/icons/users.svg"
               alt="Users"
             />
-            {{ room.usersOnline }}/10</span
-          > -->
+            {{ room.maxUsers }}/10</span
+          >
         </div>
 
         <button
@@ -104,6 +107,13 @@
           Entrar na sala
         </button>
       </div>
+
+      <Skeleton
+        v-else
+        v-for="item in 6"
+        :key="item"
+        class="relative rounded-md h-52 overflow-hidden opacity-15"
+      />
     </section>
 
     <div class="my-10 max-w-3xl m-auto">
@@ -127,6 +137,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 import { io } from "socket.io-client";
+import moment from "moment";
 import {
   Dialog,
   DialogContent,
@@ -147,6 +158,7 @@ import {
   SelectValue,
 } from "./components/ui/select";
 import { Slider } from "./components/ui/slider";
+import { Skeleton } from "./components/ui/skeleton";
 import { Toaster } from "./components/ui/sonner";
 // import { toast } from "vue-sonner";
 
@@ -176,7 +188,7 @@ interface Rooms {
   name: string;
   owner: string;
   createAt: string;
-  // usersOnline: number;
+  maxUsers: number;
 }
 
 //
@@ -192,11 +204,20 @@ const socket = io("http://localhost:3001");
 
 // Métodos
 
+//formata a data de criacao da sala
+const formatData = (data: string) => {
+  return moment(data).format("DD/MM/YY [ás] hh:mm");
+};
+
 //cria uma sala
 const createRoom = () => {
+  if (nameRoomCreated.value) {
+  }
+
   var data = {
-    room: nameRoomCreated.value,
+    name: nameRoomCreated.value,
     owner: username.value,
+    maxUsers: maxUser.value[0],
   };
   if (data) {
     socket.emit("create_room", data, (response: any) => {
@@ -209,13 +230,6 @@ const createRoom = () => {
       }
     });
   }
-};
-
-const listRooms = () => {
-  socket.emit("list_rooms", (roomList: Rooms[]) => {
-    console.log("Lista de salas:", roomList);
-    rooms.value = roomList;
-  });
 };
 
 const sendMessage = async () => {
@@ -246,6 +260,13 @@ const enterRoom = (data: CurrentData) => {
   localStorage.setItem("currentData", JSON.stringify(log));
 };
 
+const listRooms = () => {
+  socket.emit("list_rooms", (roomList: Rooms[]) => {
+    setTimeout(() => {
+      rooms.value = roomList;
+    }, 1000);
+  });
+};
 onMounted(() => {
   listRooms();
 
@@ -255,6 +276,12 @@ onMounted(() => {
   var data: any = localStorage.getItem("currentData");
   username.value = JSON.parse(data).username;
 
+  //atualiza a lista de salas
+  socket.on("room_list_update", () => {
+    listRooms();
+  });
+
+  //seleciona a sala e tras as mensagens da mesma
   socket.emit("select_room", JSON.parse(data), (res: any) => {
     for (let i = 0; i < res.length; i++) {
       const element = res[i];
@@ -262,7 +289,6 @@ onMounted(() => {
       messages.value.push(element);
     }
   });
-
   //escutar evento
   socket.on("message", (data) => {
     messages.value.push(data);
