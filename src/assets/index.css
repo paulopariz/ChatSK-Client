@@ -2,7 +2,13 @@
 @tailwind components;
 @tailwind utilities;
  
+body::-webkit-scrollbar {
+  width: 0px;
+}
 
+body::-webkit-scrollbar-track {
+  background: transparent;
+}
 
 @layer base {
   :root {

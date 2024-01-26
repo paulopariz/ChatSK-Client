@@ -29,7 +29,11 @@
             @click="saveNameUser"
             class="bg-secondary/10 border h-12 rounded-md font-medium text-sm tracking-wide px-5 text-background"
           >
-            <img src="./assets/icons/confirm.svg" alt="Save" />
+            <img
+              src="./assets/icons/confirm.svg"
+              class="invert dark:invert-0"
+              alt="Save"
+            />
           </button>
         </div>
       </div>
@@ -52,26 +56,24 @@
           <DialogDescription>
             Crie uma sala personalizada e estabeleça conexões com outros
             usuários.
-
-            <div class="my-8 grid gap-6">
-              <div>
-                <label class="text-base">Nome da Sala</label>
-                <Input
-                  v-model="nameRoomCreated"
-                  class="mt-2"
-                  placeholder="Digite o nome da sala..."
-                />
-              </div>
-
-              <div>
-                <label class="text-base">Defina o limite de usuários</label>
-                <h1 class="mt-2 te">Máximo de usuários: {{ maxUser[0] }}</h1>
-                <Slider class="mt-2" :max="10" :step="1" v-model="maxUser" />
-              </div>
-            </div>
           </DialogDescription>
         </DialogHeader>
+        <div class="my-8 grid gap-6">
+          <div>
+            <label class="text-base">Nome da Sala</label>
+            <Input
+              v-model="nameRoomCreated"
+              class="mt-2"
+              placeholder="Digite o nome da sala..."
+            />
+          </div>
 
+          <div>
+            <label class="text-base">Defina o limite de usuários</label>
+            <h1 class="mt-2 te">Máximo de usuários: {{ maxUser[0] }}</h1>
+            <Slider class="mt-2" :max="10" :step="1" v-model="maxUser" />
+          </div>
+        </div>
         <DialogFooter>
           <DialogClose
             @click="createRoom"
@@ -111,12 +113,43 @@
           >
         </div>
 
-        <button
-          @click="enterRoom(room)"
-          class="w-full h-12 tracking-wide font-semibold border border-x-0 border-b-0 bg-accent dark:bg-transparent text-sm absolute bottom-0 group-"
-        >
-          Entrar na sala
-        </button>
+        <Dialog>
+          <DialogTrigger
+            @click="enterRoom(room)"
+            class="w-full h-12 tracking-wide font-semibold border border-x-0 border-b-0 bg-accent dark:bg-transparent text-sm absolute bottom-0 group-"
+          >
+            Entrar na sala
+          </DialogTrigger>
+          <DialogContent class="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>{{ roomSelected.room }}</DialogTitle>
+              <DialogDescription>
+                Crie uma sala personalizada e estabeleça conexões com outros
+                usuários.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div class="my-8 grid gap-6">
+              <div class="my-10 max-w-3xl m-auto">
+                <Input
+                  type="text"
+                  placeholder="msg"
+                  @keyup.enter="sendMessage"
+                  v-model="message"
+                />
+
+                <div v-for="(msg, index) in messages" :key="index">
+                  <p>
+                    <span class="font-bold">{{ msg.username }} - </span>
+                    {{ msg.text }} -
+                    <span class="font-bold">{{ msg.createAt }}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            <DialogFooter> </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Skeleton
@@ -126,22 +159,6 @@
         class="relative rounded-md h-52 overflow-hidden opacity-15"
       />
     </section>
-
-    <div class="my-10 max-w-3xl m-auto">
-      <Input
-        type="text"
-        placeholder="msg"
-        @keyup.enter="sendMessage"
-        v-model="message"
-      />
-
-      <div v-for="(msg, index) in messages" :key="index">
-        <p>
-          <span class="font-bold">{{ msg.username }} - </span>
-          {{ msg.text }} - <span class="font-bold">{{ msg.createAt }}</span>
-        </p>
-      </div>
-    </div>
   </main>
 </template>
 
@@ -211,6 +228,7 @@ const theme: any = ref("");
 const message = ref("");
 const messages = ref<Messages[]>([]);
 const rooms = ref<Rooms[]>([]);
+const roomSelected = ref<any>({});
 
 const socket = io("http://localhost:3001");
 
@@ -293,12 +311,27 @@ const sendMessage = async () => {
 };
 
 const enterRoom = (data: CurrentData) => {
-  var log = {
+  const log = {
     username: username.value,
     room: data.name,
     id: data.id,
   };
+
+  //salva no localStorage
   localStorage.setItem("currentData", JSON.stringify(log));
+
+  //atualiza a variável reativa roomSelected
+  roomSelected.value = log;
+
+  //seleciona a sala e traz as mensagens
+  socket.emit("select_room", log, (res: any) => {
+    messages.value = res;
+  });
+
+  //escuta o evento "message" para atualizar as mensagens
+  socket.on("message", (data) => {
+    messages.value.push(data);
+  });
 };
 
 const listRooms = () => {
@@ -308,6 +341,7 @@ const listRooms = () => {
     }, 1000);
   });
 };
+
 onMounted(() => {
   listRooms();
 
@@ -315,25 +349,14 @@ onMounted(() => {
   theme.value = isDark === "dark" ? "dark" : "light";
 
   var data: any = localStorage.getItem("currentData");
-  username.value = JSON.parse(data).username;
-  currentUsername.value = JSON.parse(data).username;
+  if (data) {
+    username.value = JSON.parse(data).username;
+    currentUsername.value = JSON.parse(data).username;
+  }
 
   //atualiza a lista de salas
   socket.on("room_list_update", () => {
     listRooms();
-  });
-
-  //seleciona a sala e tras as mensagens da mesma
-  socket.emit("select_room", JSON.parse(data), (res: any) => {
-    for (let i = 0; i < res.length; i++) {
-      const element = res[i];
-
-      messages.value.push(element);
-    }
-  });
-  //escutar evento
-  socket.on("message", (data) => {
-    messages.value.push(data);
   });
 });
 
