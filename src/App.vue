@@ -23,6 +23,17 @@
             v-model="username"
             class="w-60 h-12 px-5 outline-none rounded-md border justify-center bg-transparent"
           />
+          <button
+            v-if="username !== currentUsername"
+            @click="saveNameUser"
+            class="bg-secondary/10 border h-12 rounded-md font-medium text-sm tracking-wide px-5 text-background"
+          >
+            <img
+              src="./assets/icons/confirm.svg"
+              class="invert dark:invert-0"
+              alt="Save"
+            />
+          </button>
         </div>
       </div>
     </div>
@@ -127,7 +138,7 @@
                 class="relative h-12"
               />
               <button
-                class="w-8 h-8 rounded-md absolute right-2 bottom-2 bg-secondary/50 flex items-center justify-center group transition-all hover:scale-95 border hover:bg-secondary/35 hover:shadow-lg hover:shadow-secondary/15"
+                class="w-8 h-8 rounded-md absolute right-2 bottom-2 bg-secondary flex items-center justify-center group transition-all hover:scale-95 border hover:shadow-lg"
               >
                 <img
                   src="./assets/icons/send.svg"
@@ -178,6 +189,8 @@ import { Toaster } from "./components/ui/sonner";
 import { toast } from "vue-sonner";
 import Bubble from "./components/Bubble.vue";
 
+import { playAudio, sendNotification } from "./utils/index";
+
 interface Messages {
   room: string;
   text: string;
@@ -211,6 +224,7 @@ interface Rooms {
 const nameRoomCreated = ref("");
 const maxUser = ref([1]);
 const username = ref("");
+const currentUsername = ref("");
 const theme: any = ref("");
 const message = ref("");
 const rooms = ref<Rooms[]>([]);
@@ -226,6 +240,22 @@ const socket = io("http://localhost:3001");
 //formata a data de criacao da sala
 const formatData = (data: string) => {
   return moment(data).format("DD/MM/YY [ás] hh:mm");
+};
+
+const saveNameUser = () => {
+  if (!username.value.length) {
+    return toast.info("Configure o seu username!");
+  }
+  var log = {
+    username: username.value,
+  };
+  localStorage.setItem("currentData", JSON.stringify(log));
+  var data: any = localStorage.getItem("currentData");
+  username.value = JSON.parse(data).username;
+  if (JSON.parse(data).username !== currentUsername.value) {
+    toast.success("Username atualizado com sucesso!");
+    currentUsername.value = JSON.parse(data).username;
+  }
 };
 
 //cria uma sala
@@ -261,21 +291,33 @@ const createRoom = () => {
   }
 };
 
+//enviar mensagem
+const isSending = ref(false);
 const sendMessage = async () => {
   var room: SendMessages = JSON.parse(
     localStorage.getItem("currentData") || "null"
   );
+
+  if (isSending.value) {
+    return;
+  }
+
   try {
+    isSending.value = true;
+
     const data = {
       room: room.room,
       message: message.value,
       username: username.value,
     };
 
-    socket.emit("message", data);
+    if (message.value.length > 0) {
+      socket.emit("message", data);
+    }
   } catch (error) {
     console.error(error);
   } finally {
+    isSending.value = false;
     message.value = "";
   }
 };
@@ -309,8 +351,34 @@ const enterRoom = (data: CurrentData) => {
   socket.on("message", (data) => {
     if (data.username === username.value) {
       myMessages.value[0].push(data);
+      if (Notification?.permission === "granted") {
+        const audio = new Audio("/emit.mp3");
+        audio.volume = 0;
+        audio.play();
+      }
     } else {
       otMessages.value[0].push(data);
+      if (
+        Notification?.permission === "granted" &&
+        document.visibilityState === "hidden"
+      ) {
+        playAudio("/on.mp3");
+        sendNotification("ChatSK", {
+          body: `${data.username}: ${data.text}`,
+          icon: "/icon.png",
+        });
+      } else if (
+        Notification?.permission === "granted" &&
+        document.visibilityState !== "hidden"
+      ) {
+        const audio = new Audio("/on.mp3");
+        audio.volume = 0.1;
+        audio.play();
+
+        toast(`${data.room}: ${data.username}`, {
+          description: data.text,
+        });
+      }
     }
   });
 };
@@ -326,6 +394,12 @@ onMounted(() => {
 
   var isDark = localStorage.getItem("theme");
   theme.value = isDark === "dark" ? "dark" : "light";
+
+  var data: any = localStorage.getItem("currentData");
+  if (data) {
+    username.value = JSON.parse(data).username;
+    currentUsername.value = JSON.parse(data).username;
+  }
 
   //atualiza a lista de salas
   socket.on("room_list_update", () => {

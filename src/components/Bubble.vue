@@ -5,21 +5,33 @@
       v-for="(msg, index) in arrayOtMessages[0]"
       :key="index"
     >
-      <span
-        class="flex-shrink-0 inline-flex items-center justify-center h-11 w-11 rounded-full border bg-secondary/20"
-      >
-        <span class="text-sm font-medium text-white leading-none uppercase">{{
-          msg.username.charAt(0)
-        }}</span>
-      </span>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <span
+              class="flex-shrink-0 inline-flex items-center justify-center h-11 w-11 rounded-full border bg-secondary/20"
+            >
+              <span
+                class="text-sm font-medium text-white leading-none uppercase"
+                >{{ msg.username.charAt(0) }}</span
+              >
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{{ msg.username }}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
 
       <div>
-        <div class="inline-block bg-secondary/10 rounded-2xl p-3.5 shadow-sm">
+        <div
+          class="inline-block bg-secondary/10 rounded-2xl p-3.5 shadow-sm max-w-96 whitespace-wrap break-words"
+        >
           <p class="text-white">{{ msg.text }}</p>
         </div>
 
         <span class="mt-1.5 flex items-center gap-x-1 text-xs text-gray-500">
-          {{ msg.createAt }}
+          {{ formatData(msg.createAt) }}
         </span>
       </div>
     </li>
@@ -31,14 +43,16 @@
     >
       <div class="grow text-end space-y-3">
         <div class="flex flex-col gap-1.5 items-end">
-          <div class="inline-block bg-secondary rounded-2xl p-3.5 shadow-sm">
-            <p class="text-sm text-white">{{ msg.text }}</p>
+          <div
+            class="inline-block bg-secondary rounded-2xl p-3.5 shadow-sm max-w-96 whitespace-wrap break-words"
+          >
+            <p class="text-sm text-white text-start">{{ msg.text }}</p>
           </div>
 
           <span
             class="mt-1.5 ms-auto flex items-center gap-x-1 text-xs text-gray-500"
           >
-            {{ msg.createAt }}
+            {{ formatData(msg.createAt) }}
           </span>
         </div>
       </div>
@@ -55,7 +69,15 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
+import moment from "moment";
+
+defineProps<{
   myMessage?: string;
   myUsername?: string;
   myDate?: string;
@@ -66,6 +88,7 @@ const props = defineProps<{
   arrayMyMessages?: any;
 }>();
 
-console.log("arrayMyMessages", props.arrayMyMessages);
-console.log("props", props.arrayOtMessages);
+const formatData = (date: string) => {
+  return moment(date).format("HH:mm");
+};
 </script>
