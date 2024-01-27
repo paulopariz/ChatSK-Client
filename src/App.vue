@@ -23,18 +23,6 @@
             v-model="username"
             class="w-60 h-12 px-5 outline-none rounded-md border justify-center bg-transparent"
           />
-
-          <button
-            v-if="username !== currentUsername"
-            @click="saveNameUser"
-            class="bg-secondary/10 border h-12 rounded-md font-medium text-sm tracking-wide px-5 text-background"
-          >
-            <img
-              src="./assets/icons/confirm.svg"
-              class="invert dark:invert-0"
-              alt="Save"
-            />
-          </button>
         </div>
       </div>
     </div>
@@ -120,44 +108,44 @@
           >
             Entrar na sala
           </DialogTrigger>
-          <DialogContent class="max-w-4xl">
+          <DialogContent class="max-w-4xl h-[700px]">
             <DialogHeader>
               <DialogTitle>{{ roomSelected.room }}</DialogTitle>
-              <DialogDescription>
-                Crie uma sala personalizada e estabeleça conexões com outros
-                usuários.
-              </DialogDescription>
             </DialogHeader>
 
-            <div class="my-8 grid gap-6">
-              <div class="my-10 max-w-3xl m-auto">
-                <Input
-                  type="text"
-                  placeholder="msg"
-                  @keyup.enter="sendMessage"
-                  v-model="message"
-                />
+            <Bubble
+              :array-ot-messages="otMessages"
+              :array-my-messages="myMessages"
+            />
 
-                <div v-for="(msg, index) in messages" :key="index">
-                  <p>
-                    <span class="font-bold">{{ msg.username }} - </span>
-                    {{ msg.text }} -
-                    <span class="font-bold">{{ msg.createAt }}</span>
-                  </p>
-                </div>
-              </div>
+            <div class="fixed bottom-5 left-1/2 -translate-x-1/2 w-11/12">
+              <Input
+                type="text"
+                placeholder="Mensagem"
+                @keyup.enter="sendMessage"
+                v-model="message"
+                class="relative h-12"
+              />
+              <button
+                class="w-8 h-8 rounded-md absolute right-2 bottom-2 bg-secondary/50 flex items-center justify-center group transition-all hover:scale-95 border hover:bg-secondary/35 hover:shadow-lg hover:shadow-secondary/15"
+              >
+                <img
+                  src="./assets/icons/send.svg"
+                  alt="Enviar"
+                  class="group-hover:rotate-45 group-hover:-ml-1 transition-all"
+                />
+              </button>
             </div>
-            <DialogFooter> </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <Skeleton
+      <h1
         v-else
-        v-for="item in 6"
-        :key="item"
-        class="relative rounded-md h-52 overflow-hidden opacity-15"
-      />
+        class="tracking-wide absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+      >
+        Nenhuma sala criada!
+      </h1>
     </section>
   </main>
 </template>
@@ -186,9 +174,9 @@ import {
   SelectValue,
 } from "./components/ui/select";
 import { Slider } from "./components/ui/slider";
-import { Skeleton } from "./components/ui/skeleton";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "vue-sonner";
+import Bubble from "./components/Bubble.vue";
 
 interface Messages {
   room: string;
@@ -223,12 +211,13 @@ interface Rooms {
 const nameRoomCreated = ref("");
 const maxUser = ref([1]);
 const username = ref("");
-const currentUsername = ref("");
 const theme: any = ref("");
 const message = ref("");
-const messages = ref<Messages[]>([]);
 const rooms = ref<Rooms[]>([]);
 const roomSelected = ref<any>({});
+
+const otMessages = ref<any[]>([]);
+const myMessages = ref<any[]>([]);
 
 const socket = io("http://localhost:3001");
 
@@ -237,25 +226,6 @@ const socket = io("http://localhost:3001");
 //formata a data de criacao da sala
 const formatData = (data: string) => {
   return moment(data).format("DD/MM/YY [ás] hh:mm");
-};
-
-const saveNameUser = () => {
-  if (!username.value.length) {
-    return toast.info("Configure o seu username!");
-  }
-
-  var log = {
-    username: username.value,
-  };
-  localStorage.setItem("currentData", JSON.stringify(log));
-
-  var data: any = localStorage.getItem("currentData");
-  username.value = JSON.parse(data).username;
-
-  if (JSON.parse(data).username !== currentUsername.value) {
-    toast.success("Username atualizado com sucesso!");
-    currentUsername.value = JSON.parse(data).username;
-  }
 };
 
 //cria uma sala
@@ -311,6 +281,9 @@ const sendMessage = async () => {
 };
 
 const enterRoom = (data: CurrentData) => {
+  myMessages.value = [];
+  otMessages.value = [];
+
   const log = {
     username: username.value,
     room: data.name,
@@ -325,20 +298,26 @@ const enterRoom = (data: CurrentData) => {
 
   //seleciona a sala e traz as mensagens
   socket.emit("select_room", log, (res: any) => {
-    messages.value = res;
+    var my = res.filter((msg: Messages) => msg.username === username.value);
+    var ot = res.filter((msg: Messages) => msg.username !== username.value);
+
+    myMessages.value.push(my);
+    otMessages.value.push(ot);
   });
 
   //escuta o evento "message" para atualizar as mensagens
   socket.on("message", (data) => {
-    messages.value.push(data);
+    if (data.username === username.value) {
+      myMessages.value[0].push(data);
+    } else {
+      otMessages.value[0].push(data);
+    }
   });
 };
 
 const listRooms = () => {
   socket.emit("list_rooms", (roomList: Rooms[]) => {
-    setTimeout(() => {
-      rooms.value = roomList;
-    }, 1000);
+    rooms.value = roomList;
   });
 };
 
@@ -347,12 +326,6 @@ onMounted(() => {
 
   var isDark = localStorage.getItem("theme");
   theme.value = isDark === "dark" ? "dark" : "light";
-
-  var data: any = localStorage.getItem("currentData");
-  if (data) {
-    username.value = JSON.parse(data).username;
-    currentUsername.value = JSON.parse(data).username;
-  }
 
   //atualiza a lista de salas
   socket.on("room_list_update", () => {
