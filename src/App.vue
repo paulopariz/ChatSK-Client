@@ -2,88 +2,133 @@
   <Toaster rich-colors position="top-right" theme="dark" />
 
   <main class="max-w-4xl p-10 w-full h-full grid m-auto gap-6">
-    <div class="flex items-center justify-between">
-      <div class="flex gap-3 items-center">
-        <Select v-model="theme">
-          <SelectTrigger class="w-[180px] h-12 px-5">
-            <SelectValue placeholder="Selecione o tema" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="light"> Light </SelectItem>
-              <SelectItem value="dark"> Dark </SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-
-        <div class="flex items-center gap-1.5">
-          <Input
-            placeholder="Username"
-            type="text"
-            v-model="username"
-            class="w-60 h-12 px-5 outline-none rounded-md border justify-center bg-transparent"
+    <nav class="flex items-center justify-end gap-5">
+      <Dialog>
+        <DialogTrigger
+          class="bg-primary dark:bg-white rounded-md py-1.5 font-medium text-xs tracking-wide px-4 text-background"
+        >
+          Criar sala
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Criar sala</DialogTitle>
+            <DialogDescription>
+              Crie uma sala personalizada e estabeleça conexões com outros
+              usuários.
+            </DialogDescription>
+          </DialogHeader>
+          <div class="my-8 grid gap-6">
+            <div>
+              <label class="text-sm">Nome da Sala</label>
+              <Input
+                v-model="nameRoomCreated"
+                class="mt-2"
+                placeholder="Digite o nome da sala..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose
+              @click="createRoom"
+              class="bg-primary dark:bg-white rounded-md py-2 font-medium text-sm tracking-wide px-6 text-background"
+            >
+              Criar
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Sheet>
+        <SheetTrigger
+          as-child
+          class="cursor-pointer transition-all hover:rotate-12"
+        >
+          <img
+            src="./assets/icons/settings.svg"
+            alt="Configurações"
+            class="invert dark:invert-0"
           />
-          <button
-            v-if="username !== currentUsername"
-            @click="saveNameUser"
-            class="bg-secondary/10 border h-12 rounded-md font-medium text-sm tracking-wide px-5 text-background"
-          >
-            <img
-              src="./assets/icons/confirm.svg"
-              class="invert dark:invert-0"
-              alt="Save"
-            />
-          </button>
-        </div>
-      </div>
-    </div>
+        </SheetTrigger>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Configurações</SheetTitle>
+            <SheetDescription>
+              Configure da maneira que preferir. Clique em salvar quando
+              terminar.
+            </SheetDescription>
+          </SheetHeader>
+          <div class="grid gap-4 py-4">
+            <div class="grid gap-2">
+              <label for="name" class="text-sm"> Nome </label>
+              <Input
+                placeholder="Username"
+                type="text"
+                v-model="username"
+                class="w-full h-12 px-5 outline-none rounded-md border justify-center bg-transparent"
+              />
+            </div>
+            <div class="grid gap-2">
+              <label for="username" class="text-sm"> Tema </label>
+              <Select v-model="theme">
+                <SelectTrigger class="w-full h-12 px-5">
+                  <SelectValue placeholder="Selecione o tema" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="light"> Light </SelectItem>
+                    <SelectItem value="dark"> Dark </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
 
-    <Dialog>
-      <DialogTrigger
-        class="text-sm mt-20 tracking-wide h-12 w-36 rounded-md border flex items-center gap-1.5 justify-center hover:bg-secondary/10"
-      >
-        Criar sala
-        <img
-          src="./assets/icons/plus.svg"
-          alt="Criar"
-          class="w-4 invert dark:invert-0"
-        />
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Criar sala</DialogTitle>
-          <DialogDescription>
-            Crie uma sala personalizada e estabeleça conexões com outros
-            usuários.
-          </DialogDescription>
-        </DialogHeader>
-        <div class="my-8 grid gap-6">
-          <div>
-            <label class="text-base">Nome da Sala</label>
-            <Input
-              v-model="nameRoomCreated"
-              class="mt-2"
-              placeholder="Digite o nome da sala..."
-            />
-          </div>
+            <div class="grid gap-2">
+              <label for="name" class="text-sm"
+                >Preferência de notificação
+              </label>
+              <div
+                class="h-16 rounded-md border w-full px-3 py-5 flex items-center justify-between"
+              >
+                <div class="flex items-center gap-3">
+                  <img
+                    src="./assets/icons/notification.svg"
+                    alt="Notificação"
+                    class="invert dark:invert-0"
+                  />
 
-          <div>
-            <label class="text-base">Defina o limite de usuários</label>
-            <h1 class="mt-2 te">Máximo de usuários: {{ maxUser[0] }}</h1>
-            <Slider class="mt-2" :max="10" :step="1" v-model="maxUser" />
+                  <div class="grid gap-0.5">
+                    <h1 class="text-sm font-medium">Notificação</h1>
+                    <p class="text-xs text-muted-foreground">
+                      Para
+                      {{
+                        isPermissionNotification == true
+                          ? "desativar"
+                          : "ativar"
+                      }}
+                      as notificações vá até "Configurações do site".
+                    </p>
+                  </div>
+                </div>
+
+                <Switch disabled :checked="isPermissionNotification" />
+              </div>
+            </div>
           </div>
-        </div>
-        <DialogFooter>
-          <DialogClose
-            @click="createRoom"
-            class="bg-primary dark:bg-white rounded-md py-2 font-medium text-sm tracking-wide px-6 text-background"
-          >
-            Criar
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-    <section class="grid grid-cols-3 gap-6 content-center">
+          <SheetFooter>
+            <SheetClose as-child v-if="username !== currentUsername">
+              <button
+                class="bg-primary dark:bg-white rounded-md py-2 font-medium text-sm tracking-wide px-6 text-background"
+                type="submit"
+                @click="saveChanges"
+              >
+                Salvar
+              </button>
+            </SheetClose>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+    </nav>
+
+    <section class="grid grid-cols-3 gap-6 content-center mt-20">
       <div
         v-if="rooms.length > 0"
         v-for="(room, index) in rooms"
@@ -102,14 +147,11 @@
             >
             <span class="text-xs tracking-wide">Dono: {{ room.owner }}</span>
           </div>
-          <span class="text-xs mt-1.5 flex items-start gap-2"
-            ><img
-              class="w-5 -mt-0.5 invert dark:invert-0"
-              src="./assets/icons/users.svg"
-              alt="Users"
-            />
-            {{ room.maxUsers }}/10</span
-          >
+          <img
+            class="w-5 mt-1 invert dark:invert-0"
+            src="./assets/icons/users.svg"
+            alt="Users"
+          />
         </div>
 
         <Dialog>
@@ -124,10 +166,7 @@
               <DialogTitle>{{ roomSelected.room }}</DialogTitle>
             </DialogHeader>
 
-            <Bubble
-              :array-ot-messages="otMessages"
-              :array-my-messages="myMessages"
-            />
+            <Bubble :messages="messages" />
 
             <div class="fixed bottom-5 left-1/2 -translate-x-1/2 w-11/12">
               <Input
@@ -136,9 +175,12 @@
                 @keyup.enter="sendMessage"
                 v-model="message"
                 class="relative h-12"
+                :disabled="!username"
               />
               <button
-                class="w-8 h-8 rounded-md absolute right-2 bottom-2 bg-secondary flex items-center justify-center group transition-all hover:scale-95 border hover:shadow-lg"
+                @click="sendMessage"
+                :disabled="!username"
+                class="w-8 h-8 rounded-md absolute right-2 bottom-2 bg-secondary flex items-center justify-center group transition-all hover:scale-95 border hover:shadow-lg disabled: cursor-not-allowed"
               >
                 <img
                   src="./assets/icons/send.svg"
@@ -176,6 +218,7 @@ import {
   DialogClose,
 } from "./components/ui/dialog";
 import { Input } from "./components/ui/input";
+
 import {
   Select,
   SelectContent,
@@ -184,19 +227,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./components/ui/select";
-import { Slider } from "./components/ui/slider";
+import { Switch } from "./components/ui/switch";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "./components/ui/sheet";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "vue-sonner";
 import Bubble from "./components/Bubble.vue";
 
 import { playAudio, sendNotification } from "./utils/index";
-
-interface Messages {
-  room: string;
-  text: string;
-  username: string;
-  createAt: string;
-}
 
 interface SendMessages {
   room: string;
@@ -209,7 +255,6 @@ interface CurrentData {
   name: string;
   owner: string;
   createAt: string;
-  // usersOnline: string;
 }
 
 interface Rooms {
@@ -217,12 +262,11 @@ interface Rooms {
   name: string;
   owner: string;
   createAt: string;
-  maxUsers: number;
 }
 
 //
+const isPermissionNotification = ref(false);
 const nameRoomCreated = ref("");
-const maxUser = ref([1]);
 const username = ref("");
 const currentUsername = ref("");
 const theme: any = ref("");
@@ -230,8 +274,7 @@ const message = ref("");
 const rooms = ref<Rooms[]>([]);
 const roomSelected = ref<any>({});
 
-const otMessages = ref<any[]>([]);
-const myMessages = ref<any[]>([]);
+const messages = ref<any[]>([]);
 
 const socket = io("http://localhost:3001");
 
@@ -239,10 +282,10 @@ const socket = io("http://localhost:3001");
 
 //formata a data de criacao da sala
 const formatData = (data: string) => {
-  return moment(data).format("DD/MM/YY [ás] hh:mm");
+  return moment(data).format("DD/MM/YY [ás] HH:mm");
 };
 
-const saveNameUser = () => {
+const saveChanges = () => {
   if (!username.value.length) {
     return toast.info("Configure o seu username!");
   }
@@ -264,10 +307,6 @@ const createRoom = () => {
     return toast.error("Nome da sala é obrigatório!");
   }
 
-  if (maxUser.value[0] < 3) {
-    return toast.error("Mínimo 3 usuários!");
-  }
-
   if (!username.value.length) {
     return toast.info("Configure o seu username!");
   }
@@ -275,14 +314,12 @@ const createRoom = () => {
   var data = {
     name: nameRoomCreated.value,
     owner: username.value,
-    maxUsers: maxUser.value[0],
   };
   if (data) {
     socket.emit("create_room", data, (response: any) => {
       if (response.success) {
         toast.success("Sala criada com sucesso!");
         nameRoomCreated.value = "";
-        maxUser.value[0] = 1;
         rooms.value.push(response.data);
       } else {
         toast.error("Ocorreu um erro, tente novamente!");
@@ -323,8 +360,11 @@ const sendMessage = async () => {
 };
 
 const enterRoom = (data: CurrentData) => {
-  myMessages.value = [];
-  otMessages.value = [];
+  if (!username.value.length) {
+    return toast.info("Configure o seu username!");
+  }
+
+  messages.value = [];
 
   const log = {
     username: username.value,
@@ -340,24 +380,19 @@ const enterRoom = (data: CurrentData) => {
 
   //seleciona a sala e traz as mensagens
   socket.emit("select_room", log, (res: any) => {
-    var my = res.filter((msg: Messages) => msg.username === username.value);
-    var ot = res.filter((msg: Messages) => msg.username !== username.value);
-
-    myMessages.value.push(my);
-    otMessages.value.push(ot);
+    messages.value.push(res);
   });
 
   //escuta o evento "message" para atualizar as mensagens
   socket.on("message", (data) => {
+    messages.value[0].push(data);
     if (data.username === username.value) {
-      myMessages.value[0].push(data);
       if (Notification?.permission === "granted") {
         const audio = new Audio("/emit.mp3");
         audio.volume = 0;
         audio.play();
       }
     } else {
-      otMessages.value[0].push(data);
       if (
         Notification?.permission === "granted" &&
         document.visibilityState === "hidden"
@@ -367,12 +402,9 @@ const enterRoom = (data: CurrentData) => {
           body: `${data.username}: ${data.text}`,
           icon: "/icon.png",
         });
-      } else if (
-        Notification?.permission === "granted" &&
-        document.visibilityState !== "hidden"
-      ) {
+      } else if (document.visibilityState !== "hidden") {
         const audio = new Audio("/on.mp3");
-        audio.volume = 0.1;
+        audio.volume = 0.5;
         audio.play();
 
         toast(`${data.room}: ${data.username}`, {
@@ -389,7 +421,24 @@ const listRooms = () => {
   });
 };
 
+//chamar o popup do navegador para mostrar notificaçoes
+const isNotification = () => {
+  if ("Notification" in window) {
+    document.addEventListener("DOMContentLoaded", () => {
+      if (Notification.permission !== "denied") {
+        Notification.requestPermission().then((permission) => {
+          return permission;
+        });
+      }
+    });
+  }
+};
+
 onMounted(() => {
+  var isActive = Notification.permission;
+  isPermissionNotification.value = isActive == "granted" ? true : false;
+
+  isNotification();
   listRooms();
 
   var isDark = localStorage.getItem("theme");
