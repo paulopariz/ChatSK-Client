@@ -1,5 +1,5 @@
 <template>
-  <Toaster rich-colors position="top-right" theme="dark" />
+  <Toaster rich-colors position="top-right" close-button theme="dark" />
 
   <main class="max-w-4xl p-10 w-full h-full grid m-auto gap-6">
     <nav class="flex items-center justify-end gap-5">
@@ -19,12 +19,41 @@
           </DialogHeader>
           <div class="my-8 grid gap-6">
             <div>
-              <label class="text-sm">Nome da Sala</label>
+              <label class="text-sm">Nome da Sala *</label>
               <Input
                 v-model="nameRoomCreated"
                 class="mt-2"
                 placeholder="Digite o nome da sala..."
               />
+            </div>
+
+            <div>
+              <label class="text-sm">Imagem da sala</label>
+              <div
+                class="grid grid-cols-6 place-items-center border mt-2 px-2 py-3"
+              >
+                <label
+                  class="relative cursor-pointer focus:outline-none transition-all hover:scale-95"
+                  v-for="(img, index) in images"
+                  :key="index"
+                >
+                  <input
+                    type="radio"
+                    class="hidden"
+                    @input="selectImage(img)"
+                  />
+                  <div
+                    tabindex="0"
+                    class="w-16 h-16 overflow-hidden rounded-md border-2 border-transparent focus:border-blue-900 ring-offset-background transition-all duration-300"
+                  >
+                    <img
+                      :src="img.src"
+                      alt="Imagem"
+                      class="w-full h-full object-cover"
+                    />
+                  </div>
+                </label>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -66,6 +95,7 @@
                 class="w-full h-12 px-5 outline-none rounded-md border justify-center bg-transparent"
               />
             </div>
+
             <div class="grid gap-2">
               <label for="username" class="text-sm"> Tema </label>
               <Select v-model="theme">
@@ -82,9 +112,28 @@
             </div>
 
             <div class="grid gap-2">
+              <label for="name" class="text-sm"> Sala atual </label>
+              <p class="text-xs text-muted-foreground">
+                Você só receberá notificacões da sua sala selecionada atualmente
+              </p>
+              <Input
+                placeholder="Sala atual"
+                disabled
+                type="text"
+                v-model="currentData.room"
+                class="w-full h-12 px-5 outline-none rounded-md border justify-center bg-transparent"
+              />
+            </div>
+
+            <div class="grid gap-2">
               <label for="name" class="text-sm"
                 >Preferência de notificação
               </label>
+              <p class="text-xs text-muted-foreground">
+                Para
+                {{ isPermissionNotification == true ? "desativar" : "ativar" }}
+                as notificações vá até "Configurações do site".
+              </p>
               <div
                 class="h-16 rounded-md border w-full px-3 py-5 flex items-center justify-between"
               >
@@ -97,15 +146,6 @@
 
                   <div class="grid gap-0.5">
                     <h1 class="text-sm font-medium">Notificação</h1>
-                    <p class="text-xs text-muted-foreground">
-                      Para
-                      {{
-                        isPermissionNotification == true
-                          ? "desativar"
-                          : "ativar"
-                      }}
-                      as notificações vá até "Configurações do site".
-                    </p>
                   </div>
                 </div>
 
@@ -114,7 +154,7 @@
             </div>
           </div>
           <SheetFooter>
-            <SheetClose as-child v-if="username !== currentUsername">
+            <SheetClose as-child v-if="username !== currentData.username">
               <button
                 class="bg-primary dark:bg-white rounded-md py-2 font-medium text-sm tracking-wide px-6 text-background"
                 type="submit"
@@ -129,70 +169,104 @@
     </nav>
 
     <section class="grid grid-cols-3 gap-6 content-center mt-20">
-      <div
+      <Dialog
         v-if="rooms.length > 0"
         v-for="(room, index) in rooms"
         :key="index"
-        class="relative rounded-md border h-52 overflow-hidden group hover:bg-secondary/5"
       >
-        <div class="p-5 flex items-start justify-between">
-          <div class="grid gap-1.5">
-            <h1
-              class="text-lg font-semibold tracking-wider w-40 text-ellipsis text-nowrap overflow-hidden"
-            >
-              {{ room.name }}
-            </h1>
-            <span class="text-xs tracking-wide">
-              {{ formatData(room.createAt) }}</span
-            >
-            <span class="text-xs tracking-wide">Dono: {{ room.owner }}</span>
-          </div>
-          <img
-            class="w-5 mt-1 invert dark:invert-0"
-            src="./assets/icons/users.svg"
-            alt="Users"
-          />
-        </div>
-
-        <Dialog>
-          <DialogTrigger
-            @click="enterRoom(room)"
-            class="w-full h-12 tracking-wide font-semibold border border-x-0 border-b-0 bg-accent dark:bg-transparent text-sm absolute bottom-0 group-"
-          >
-            Entrar na sala
-          </DialogTrigger>
-          <DialogContent class="max-w-4xl h-[700px]">
-            <DialogHeader>
-              <DialogTitle>{{ roomSelected.room }}</DialogTitle>
-            </DialogHeader>
-
-            <Bubble :messages="messages" />
-
-            <div class="fixed bottom-5 left-1/2 -translate-x-1/2 w-11/12">
-              <Input
-                type="text"
-                placeholder="Mensagem"
-                @keyup.enter="sendMessage"
-                v-model="message"
-                class="relative h-12"
-                :disabled="!username"
+        <DialogTrigger
+          @click="enterRoom(room)"
+          class="relative rounded-md border overflow-hidden group hover:bg-secondary/5 p-3 w-64"
+        >
+          <div class="flex gap-3 items-center justify-between">
+            <div class="flex gap-3 items-center">
+              <img
+                v-if="room?.img"
+                :src="room.img"
+                :alt="room.name"
+                class="rounded-md w-8 h-8"
               />
-              <button
-                @click="sendMessage"
-                :disabled="!username"
-                class="w-8 h-8 rounded-md absolute right-2 bottom-2 bg-secondary flex items-center justify-center group transition-all hover:scale-95 border hover:shadow-lg disabled: cursor-not-allowed"
+              <div
+                class="rounded-md w-8 h-8 border text-xs flex justify-center items-center bg-secondary/5"
+                v-else
               >
-                <img
-                  src="./assets/icons/send.svg"
-                  alt="Enviar"
-                  class="group-hover:rotate-45 group-hover:-ml-1 transition-all"
-                />
-              </button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+                {{ room.name.charAt(0) }}
+              </div>
 
+              <div class="flex items-start flex-col">
+                <h1
+                  class="font-semibold tracking-wide w-36 text-start text-ellipsis overflow-hidden"
+                >
+                  {{ room.name }}
+                </h1>
+                <span class="text-xs dark:text-gray-300">
+                  {{ formatData(room.createAt) }}</span
+                >
+                <span
+                  class="text-xs dark:text-gray-300 w-36 text-start text-ellipsis overflow-hidden"
+                  >Dono: {{ room.owner }}</span
+                >
+              </div>
+            </div>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <img
+                    src="./assets/icons/enter.svg"
+                    alt="Entrar"
+                    class="invert dark:invert-0"
+                  />
+                </TooltipTrigger>
+                <TooltipContent> Entrar na sala </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </DialogTrigger>
+        <DialogContent class="max-w-4xl h-[700px]">
+          <DialogHeader>
+            <DialogTitle class="flex items-center gap-3">
+              <img
+                :src="roomSelected.img"
+                :alt="roomSelected.room"
+                v-if="roomSelected.img"
+                class="rounded-md w-8 h-8"
+              />
+              <div
+                class="rounded-md w-8 h-8 border text-xs flex justify-center items-center bg-secondary/5"
+                v-else
+              >
+                {{ roomSelected.room.charAt(0) }}
+              </div>
+              <h1 class="-mt-1.5">{{ roomSelected.room }}</h1>
+            </DialogTitle>
+          </DialogHeader>
+
+          <Bubble :messages="messages" />
+
+          <div class="fixed bottom-5 left-1/2 -translate-x-1/2 w-11/12">
+            <Input
+              type="text"
+              placeholder="Mensagem"
+              @keyup.enter="sendMessage"
+              v-model="message"
+              class="relative h-12 bg-secondary/5 outline-none"
+              :disabled="!username"
+            />
+            <button
+              @click="sendMessage"
+              :disabled="!username"
+              class="w-8 h-8 rounded-md absolute right-2 bottom-2 bg-secondary flex items-center justify-center group transition-all hover:scale-95 border hover:shadow-lg disabled:cursor-not-allowed"
+            >
+              <img
+                src="./assets/icons/send.svg"
+                alt="Enviar"
+                class="group-hover:rotate-45 group-hover:-ml-1 transition-all"
+              />
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <h1
         v-else
         class="tracking-wide absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
@@ -229,6 +303,12 @@ import {
 } from "./components/ui/select";
 import { Switch } from "./components/ui/switch";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./components/ui/tooltip";
+import {
   Sheet,
   SheetClose,
   SheetContent,
@@ -254,6 +334,7 @@ interface CurrentData {
   id: number;
   name: string;
   owner: string;
+  img: string;
   createAt: string;
 }
 
@@ -261,6 +342,7 @@ interface Rooms {
   id: number;
   name: string;
   owner: string;
+  img: string;
   createAt: string;
 }
 
@@ -268,13 +350,35 @@ interface Rooms {
 const isPermissionNotification = ref(false);
 const nameRoomCreated = ref("");
 const username = ref("");
-const currentUsername = ref("");
+const currentData: any = ref({});
 const theme: any = ref("");
 const message = ref("");
 const rooms = ref<Rooms[]>([]);
 const roomSelected = ref<any>({});
 
 const messages = ref<any[]>([]);
+
+const selectedImage = ref("");
+const images = [
+  {
+    src: "https://gradients.app/public/img/main/img8.jpg",
+  },
+  {
+    src: "https://indieground.net/wp-content/uploads/2023/03/Freebie-GradientTextures-Preview-04.jpg",
+  },
+  {
+    src: "https://img.freepik.com/free-vector/gradient-grainy-texture_23-2148981502.jpg",
+  },
+  {
+    src: "https://cdn.magicdecor.in/com/2023/11/18151631/Teal-Blue-Grainy-Gradient-Wallpaper-for-Wall.jpg",
+  },
+  {
+    src: "https://img.freepik.com/premium-photo/midnight-sky-abstract-gradient-texture_170579-1432.jpg",
+  },
+  {
+    src: "https://img.freepik.com/free-photo/abstract-gradient-neon-lights_23-2149279180.jpg",
+  },
+];
 
 const socket = io("http://localhost:3001");
 
@@ -295,12 +399,16 @@ const saveChanges = () => {
   localStorage.setItem("currentData", JSON.stringify(log));
   var data: any = localStorage.getItem("currentData");
   username.value = JSON.parse(data).username;
-  if (JSON.parse(data).username !== currentUsername.value) {
+  if (JSON.parse(data).username !== currentData.value) {
     toast.success("Username atualizado com sucesso!");
-    currentUsername.value = JSON.parse(data).username;
+    currentData.value = JSON.parse(data);
   }
 };
 
+//seleciona a imagem de perfil da sala
+const selectImage = (img: any) => {
+  selectedImage.value = img.src;
+};
 //cria uma sala
 const createRoom = () => {
   if (!nameRoomCreated.value) {
@@ -314,12 +422,16 @@ const createRoom = () => {
   var data = {
     name: nameRoomCreated.value,
     owner: username.value,
+    img: selectedImage.value,
   };
+
   if (data) {
     socket.emit("create_room", data, (response: any) => {
       if (response.success) {
         toast.success("Sala criada com sucesso!");
         nameRoomCreated.value = "";
+        selectedImage.value = "";
+
         rooms.value.push(response.data);
       } else {
         toast.error("Ocorreu um erro, tente novamente!");
@@ -369,6 +481,7 @@ const enterRoom = (data: CurrentData) => {
   const log = {
     username: username.value,
     room: data.name,
+    img: data.img,
     id: data.id,
   };
 
@@ -447,7 +560,7 @@ onMounted(() => {
   var data: any = localStorage.getItem("currentData");
   if (data) {
     username.value = JSON.parse(data).username;
-    currentUsername.value = JSON.parse(data).username;
+    currentData.value = JSON.parse(data);
   }
 
   //atualiza a lista de salas
