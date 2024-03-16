@@ -498,31 +498,39 @@ const enterRoom = (data: CurrentData) => {
 
   //escuta o evento "message" para atualizar as mensagens
   socket.on("message", (data) => {
-    messages.value[0].push(data);
-    if (data.username === username.value) {
-      if (Notification?.permission === "granted") {
-        const audio = new Audio("/emit.mp3");
-        audio.volume = 0;
-        audio.play();
-      }
-    } else {
-      if (
-        Notification?.permission === "granted" &&
-        document.visibilityState === "hidden"
-      ) {
-        playAudio("/on.mp3");
-        sendNotification("ChatSK", {
-          body: `${data.username}: ${data.text}`,
-          icon: "/icon.png",
-        });
-      } else if (document.visibilityState !== "hidden") {
-        const audio = new Audio("/on.mp3");
-        audio.volume = 0.5;
-        audio.play();
+    // verifica se a mensagem já existe na lista de mensagens
+    const existingMessageIndex = messages.value[0].findIndex(
+      (msg: { text: any; createAt: any }) =>
+        msg.text === data.text && msg.createAt === data.createAt
+    );
+    if (existingMessageIndex === -1) {
+      messages.value[0].push(data);
 
-        toast(`${data.room}: ${data.username}`, {
-          description: data.text,
-        });
+      if (data.username === username.value) {
+        if (Notification?.permission === "granted") {
+          const audio = new Audio("/emit.mp3");
+          audio.volume = 0;
+          audio.play();
+        }
+      } else {
+        if (
+          Notification?.permission === "granted" &&
+          document.visibilityState === "hidden"
+        ) {
+          playAudio("/on.mp3");
+          sendNotification("ChatSK", {
+            body: `${data.username}: ${data.text}`,
+            icon: "/icon.png",
+          });
+        } else if (document.visibilityState !== "hidden") {
+          const audio = new Audio("/on.mp3");
+          audio.volume = 0.5;
+          audio.play();
+
+          toast(`${data.room}: ${data.username}`, {
+            description: data.text,
+          });
+        }
       }
     }
   });
