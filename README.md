@@ -1,18 +1,59 @@
-# Vue 3 + TypeScript + Vite
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+# CharSK <img src="https://github.com/paulopariz/ChatSK-Client/assets/111146928/a2842403-b866-43e9-ae48-030c24370b3d" width="27" /> 
 
-## Recommended IDE Setup
+Chat em tempo real com diferente salas, suporte a dois temas(dark e light) e desenvolvida utilizando Socket.IO
 
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
+## Demonstração
 
-## Type Support For `.vue` Imports in TS
+https://github.com/paulopariz/ChatSK-Client/assets/111146928/c843972c-0191-40d7-82b4-3d21117de1bf
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin) to make the TypeScript language service aware of `.vue` types.
 
-If the standalone TypeScript plugin doesn't feel fast enough to you, Volar has also implemented a [Take Over Mode](https://github.com/johnsoncodehk/volar/discussions/471#discussioncomment-1361669) that is more performant. You can enable it by the following steps:
 
-1. Disable the built-in TypeScript Extension
-   1. Run `Extensions: Show Built-in Extensions` from VSCode's command palette
-   2. Find `TypeScript and JavaScript Language Features`, right click and select `Disable (Workspace)`
-2. Reload the VSCode window by running `Developer: Reload Window` from the command palette.
+## Stack utilizada
+
+**Front-end:** Vue3(composition API), TypeScript, Tailwind, Shadcn.
+
+**Back-end:** Node, Typescript, Express, Socket.io.
+
+
+## Funcionalidades
+
+- Chat em tempo real
+- Notificações
+- Temas dark e light
+
+
+## 🔗 Links
+
+[![linkedin](https://img.shields.io/badge/Backend-0C101E?style=for-the-badge&logo=github&logoColor=white)](https://github.com/paulopariz/ChatSK-Server)
+
+[![linkedin](https://img.shields.io/badge/linkedin-0C101E?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/paulopariz/)
+
+
+
+## Autor
+
+- [@paulopariz](https://www.linkedin.com/in/paulopariz/)
+
+
+## Rodar Front e Back
+
+Clone os projeto
+
+```bash
+  git clone https://github.com/paulopariz/ChatSK-Server
+  git https://github.com/paulopariz/ChatSK-Client
+```
+
+
+Instale as dependências
+
+```bash
+  npm install
+```
+
+Inicie os servidores
+
+```bash
+  npm run dev
+```
