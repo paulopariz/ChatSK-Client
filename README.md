@@ -42,7 +42,7 @@ Clone os projeto
 
 ```bash
   git clone https://github.com/paulopariz/ChatSK-Server
-  git https://github.com/paulopariz/ChatSK-Client
+  git clone https://github.com/paulopariz/ChatSK-Client
 ```
 
 
